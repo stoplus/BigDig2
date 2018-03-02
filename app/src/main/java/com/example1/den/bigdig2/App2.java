@@ -31,7 +31,6 @@ import java.util.Date;
 public class App2 extends AppCompatActivity {
 
     private ImageView imageView;
-    private String id;
     private final static String DIR_SD = "BIGDIG/test/B/";
     private static final int REQUEST_WRITE_EXTERNAL_STORAGE = 10001;
     // объявляем разрешение, которое нам нужно получить
@@ -39,7 +38,6 @@ public class App2 extends AppCompatActivity {
     private String textLink;
     private String AUTHORITY;
     private String PATH;
-    private int status;
     private String timeFormatted;
 
     @Override
@@ -48,26 +46,19 @@ public class App2 extends AppCompatActivity {
         setContentView(R.layout.activity_app2);
 
         textLink = getIntent().getStringExtra("linkText");//получаем ссылку из EditText
-        AUTHORITY = getIntent().getStringExtra("AUTHORITY");//получаем ссылку из EditText
-        PATH = getIntent().getStringExtra("PATH");//получаем ссылку из EditText
-//        textLink = "https://wallpaperscraft.ru/image/bmw_motocikl_sportivnyy_doroga_74150_602x339.jpg";
+        AUTHORITY = getIntent().getStringExtra("AUTHORITY");
+        PATH = getIntent().getStringExtra("PATH");
 
-        if (textLink == null) {
-            Toast.makeText(this, "Закрываем", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
         imageView = findViewById(R.id.imageView);
         boolean processing = getIntent().getBooleanExtra("processing", false);
-
         //если нажали на ссылку в истории
         if (processing) {
             setPicture();//работа с историей
         } else {
             //при нажатии на "ок"
             createLink();//сохраняем ссылку в базу приложения "А"
-        }
-    }
+        }//if
+    }//onCreate
 
     //создаем данные по ссылке
     private void createLink() {
@@ -84,78 +75,26 @@ public class App2 extends AppCompatActivity {
                     @Override
                     public void onSuccess() {
                         statusArr[0] = 1;
-                        saveLinkInDatabase(textLink, timeFormatted, statusArr[0]);//сохраняем ссылку в базу приложения "А"
-                    }
+                        insertLinkInDatabase(textLink, timeFormatted, statusArr[0]);//сохраняем ссылку в базу приложения "А"
+                    }//onSuccess
 
                     @Override
                     public void onError() {
                         statusArr[0] = 2;
-                        saveLinkInDatabase(textLink, timeFormatted, statusArr[0]);//сохраняем ссылку в базу приложения "А"
-                    }
+                        insertLinkInDatabase(textLink, timeFormatted, statusArr[0]);//сохраняем ссылку в базу приложения "А"
+                    }//onError
                 });
-    }
+    }//createLink
 
-
-    private void saveLinkInDatabase(String fileName, String timeFormatted, int status) {
+    private void insertLinkInDatabase(String fileName, String timeFormatted, int status) {
         //сохраняем ссылку в базе
         Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + PATH);
-        ContentValues values = new ContentValues();
-        values.put("link", fileName);
-        values.put("time", timeFormatted);
-        values.put("status_link", status);
+        ContentValues values = createContentValues(status);
         Uri mUri = getContentResolver().insert(CONTENT_URI, values);
         if (mUri != null) {
-            Toast.makeText(getApplicationContext(), "Successfully added to Content Provider", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "Ссылка добавлена в базу данных", Toast.LENGTH_LONG).show();
         }
-    }//saveLinkInDatabase
-
-//    private void createList() {
-//        DownloadManager.Query query = new DownloadManager.Query();
-//        query.setFilterByStatus(DownloadManager.STATUS_PAUSED |
-//                DownloadManager.STATUS_PENDING |
-//                DownloadManager.STATUS_RUNNING |
-//                DownloadManager.STATUS_SUCCESSFUL);
-//        Cursor cur = downloadManager.query(query);
-//        cur.moveToFirst();
-//        for (int i = 0; i < cur.getCount(); i++) {
-//            String fileName = cur.getString(cur.getColumnIndex(DownloadManager.COLUMN_URI));
-//            listLinksName.add(fileName);
-//
-//            long time = cur.getLong(cur.getColumnIndex(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP));
-//            Date date = new Date(time);
-//            DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-//            String timeFormatted = formatter.format(date);
-//            listLinksTime.add(timeFormatted);
-//
-//            int status;
-//            int downloadStatus = cur.getInt(cur.getColumnIndex(DownloadManager.COLUMN_STATUS));
-//            switch (downloadStatus) {
-//                case DownloadManager.STATUS_SUCCESSFUL:
-//                    status = 1;
-//                    break;
-//                case DownloadManager.STATUS_FAILED:
-//                    status = 2;
-//                    break;
-//                default:
-//                    status = 3;
-//                    break;
-//            }
-//            listLinksStatus.add(status);
-//            cur.moveToNext();
-//        }
-//        cur.close();
-//    }
-
-    // приёмник уведомления об успешной загрузке
-//    private BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            long reference = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-//            if (id == reference) {                // Ваши действия с загруженным файлом
-//                imageView.setImageURI(downloadManager.getUriForDownloadedFile(reference));//показываем картинку
-//            }
-//        }
-//    };
+    }//insertLinkInDatabase
 
     private void setPicture() {
         Picasso.with(getApplicationContext())
@@ -165,45 +104,19 @@ public class App2 extends AppCompatActivity {
                     @Override
                     public void onSuccess() {
                         processingHistory();
-                    }
+                    }//onSuccess
 
                     @Override
                     public void onError() {
-                    }
+                        Toast.makeText(getApplicationContext(), "Ошибка открытия файла!", Toast.LENGTH_LONG).show();
+                    }//onError
                 });
-
-//        DownloadManager.Query query = new DownloadManager.Query();
-//        query.setFilterByStatus(DownloadManager.STATUS_PAUSED |
-//                DownloadManager.STATUS_PENDING |
-//                DownloadManager.STATUS_RUNNING |
-//                DownloadManager.STATUS_SUCCESSFUL);
-//        Cursor cur = downloadManager.query(query);
-//        cur.moveToFirst();
-//        for (int i = 0; i < cur.getCount(); i++) {
-//            String url = cur.getString(cur.getColumnIndex(DownloadManager.COLUMN_URI));//получаем url
-//
-//            if (textLink.equals(url)) {
-//                Long id = cur.getLong(cur.getColumnIndex(DownloadManager.COLUMN_ID));//получаем id
-//                imageView.setImageURI(downloadManager.getUriForDownloadedFile(id));//показываем картинку
-
-
-//            }
-//            if (textLink.equals(url)&& downloadStatus == 1) {
-//                Long id = cur.getLong(cur.getColumnIndex(DownloadManager.COLUMN_ID));
-//                imageView.setImageURI(downloadManager.getUriForDownloadedFile(id));//показываем картинку
-//                downloadManager.remove(id);
-//
-//                break;
-//            }
-//            cur.moveToNext();
-//        }
-//        cur.close();
-    }
+    }//setPicture
 
     private void processingHistory() {
         final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + PATH);
-        status = getIntent().getIntExtra("status", 3);//получаем ссылку из EditText
-        id = getIntent().getStringExtra("id");//получаем ссылку из EditText
+        int status = getIntent().getIntExtra("status", 3);
+        String id = getIntent().getStringExtra("id");//получаем ссылку из EditText
         final String[] selectionArgs = {id};
 
         switch (status) {
@@ -220,12 +133,12 @@ public class App2 extends AppCompatActivity {
             default:
                 updateLink();
                 break;
-        }
-    }
+        }//switch
+    }//processingHistory
 
     private void updateLink() {
         final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + PATH);
-        id = getIntent().getStringExtra("id");//получаем ссылку из EditText
+        String id = getIntent().getStringExtra("id");//получаем ссылку из EditText
         final String[] selectionArgs = {id};
 
         long time = Calendar.getInstance().getTime().getTime();
@@ -241,37 +154,39 @@ public class App2 extends AppCompatActivity {
                     @Override
                     public void onSuccess() {
                         statusArr[0] = 1;
-                        ContentValues values = new ContentValues();
-                        values.put("link", textLink);
-                        values.put("time", timeFormatted);
-                        values.put("status_link", statusArr[0]);
+                        ContentValues values = createContentValues(statusArr[0]);
                         getContentResolver().update(CONTENT_URI, values, "_id=?", selectionArgs);
-                    }
+                    }//onSuccess
 
                     @Override
                     public void onError() {
                         statusArr[0] = 2;
-                        ContentValues values = new ContentValues();
-                        values.put("link", textLink);
-                        values.put("time", timeFormatted);
-                        values.put("status_link", statusArr[0]);
+                        ContentValues values = createContentValues(statusArr[0]);
                         getContentResolver().update(CONTENT_URI, values, "_id=?", selectionArgs);
-                    }
+                    }//onError
                 });
-    }
+    }//updateLink
+
+    private ContentValues createContentValues(int status) {
+        ContentValues values = new ContentValues();
+        values.put("link", textLink);
+        values.put("time", timeFormatted);
+        values.put("status_link", status);
+        return values;
+    }//createContentValues
 
     private void checkPermisAndSavePicture() {
         //сохраняем картинку
         if (textLink != null && !textLink.equals("")) {
             if (isPermissionGranted(WRITE_EXTERNAL_STORAGE_PERMISSION)) {
-                Toast.makeText(this, "Разрешения есть, можно работать", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "Разрешения есть, можно работать", Toast.LENGTH_SHORT).show();
                 savePicture();
             } else {
                 // иначе запрашиваем разрешение у пользователя
                 requestPermission(WRITE_EXTERNAL_STORAGE_PERMISSION, REQUEST_WRITE_EXTERNAL_STORAGE);
-            }
-        }
-    }
+            }//if
+        }//if
+    }//checkPermisAndSavePicture
 
     private void savePicture() {
         Uri downloadUri = Uri.parse(textLink);
@@ -279,7 +194,7 @@ public class App2 extends AppCompatActivity {
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             Toast.makeText(this, "SD-карта не доступна: " + Environment.getExternalStorageState(), Toast.LENGTH_LONG).show();
             return;
-        }
+        }//if
         File sdPath = Environment.getExternalStorageDirectory();// получаем путь к SD
         sdPath = new File(sdPath.getAbsolutePath() + "/" + DIR_SD); // добавляем свой каталог к пути
         sdPath.mkdirs();// создаем каталог
@@ -293,37 +208,22 @@ public class App2 extends AppCompatActivity {
         } catch (IllegalArgumentException e) {
             Toast.makeText(this, "Can only download HTTP/HTTPS URIs", Toast.LENGTH_LONG).show();
             startMainApp();
-        }
-    }
+        }//try-catch
+    }//savePicture
 
     private void startMainApp() {
         Intent intent = new Intent();
         intent.setClassName("com.example.den.bigdig", "com.example.den.bigdig.MainActivity");
         startActivity(intent);
         finish();
-    }
-
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        IntentFilter intentFilter = new IntentFilter(
-//                DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-//        registerReceiver(downloadReceiver, intentFilter);
-//    }
-//
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//        unregisterReceiver(downloadReceiver);
-//    }
-
+    }//startMainApp
 
     //---------------------------------------------------------------------------------------------
     private boolean isPermissionGranted(String permission) {
         // проверяем разрешение - есть ли оно у нашего приложения
         int permissionCheck = ActivityCompat.checkSelfPermission(this, permission);
         return permissionCheck == PackageManager.PERMISSION_GRANTED;
-    }
+    }//isPermissionGranted
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -337,13 +237,13 @@ public class App2 extends AppCompatActivity {
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
+        }//if
+    }//onRequestPermissionsResult
 
     private void requestPermission(String permission, int requestCode) {
         // запрашиваем разрешение
         ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
-    }
+    }//requestPermission
 
     private void showPermissionDialog(Context context) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -367,14 +267,14 @@ public class App2 extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         // display dialog
         dialog.show();
-    }
+    }//showPermissionDialog
 
     private void openAppSettings() {
         Intent intent1 = new Intent();
         intent1.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent1.setData(Uri.parse("package:" + getPackageName()));
         startActivityForResult(intent1, REQUEST_WRITE_EXTERNAL_STORAGE);
-    }
+    }//openAppSettings
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -382,7 +282,7 @@ public class App2 extends AppCompatActivity {
         if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE) {
             requestApplicationConfig();
         }
-    }
+    }//onActivityResult
 
     private void requestApplicationConfig() {
         if (isPermissionGranted(WRITE_EXTERNAL_STORAGE_PERMISSION)) {
@@ -391,13 +291,12 @@ public class App2 extends AppCompatActivity {
         } else {
             Toast.makeText(App2.this, "Пользователь снова не дал нам разрешение", Toast.LENGTH_LONG).show();
             requestPermission(WRITE_EXTERNAL_STORAGE_PERMISSION, REQUEST_WRITE_EXTERNAL_STORAGE);
-        }
-    }
+        }//if
+    }//requestApplicationConfig
 
     @Override
     public void onBackPressed() {
         startMainApp();
         super.onBackPressed();
-    }
-}
-
+    }//onBackPressed
+}//class App2
