@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
@@ -39,11 +40,13 @@ public class App2 extends AppCompatActivity {
     private String AUTHORITY;
     private String PATH;
     private String timeFormatted;
+    private Resources res;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_app2);
+        res = getResources();//доступ к ресерсам
 
         textLink = getIntent().getStringExtra("linkText");//получаем ссылку из EditText
         AUTHORITY = getIntent().getStringExtra("AUTHORITY");
@@ -92,7 +95,7 @@ public class App2 extends AppCompatActivity {
         ContentValues values = createContentValues(status);
         Uri mUri = getContentResolver().insert(CONTENT_URI, values);
         if (mUri != null) {
-            Toast.makeText(getApplicationContext(), "Ссылка добавлена в базу данных", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), res.getString(R.string.addLink), Toast.LENGTH_LONG).show();
         }
     }//insertLinkInDatabase
 
@@ -108,7 +111,7 @@ public class App2 extends AppCompatActivity {
 
                     @Override
                     public void onError() {
-                        Toast.makeText(getApplicationContext(), "Ошибка открытия файла!", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), res.getString(R.string.errorOpenFile), Toast.LENGTH_LONG).show();
                     }//onError
                 });
     }//setPicture
@@ -126,7 +129,7 @@ public class App2 extends AppCompatActivity {
                     public void run() {
                         getContentResolver().delete(CONTENT_URI, "_id=?", selectionArgs);//удаление из базы
                         checkPermisAndSavePicture();//проверка прав и сохранение картинки
-                        Toast.makeText(getApplicationContext(), "Ссылка удалена", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), res.getString(R.string.linkDeleted), Toast.LENGTH_LONG).show();
                     }
                 }, 15000);
                 break;
@@ -192,7 +195,7 @@ public class App2 extends AppCompatActivity {
         Uri downloadUri = Uri.parse(textLink);
         // проверяем доступность SD
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            Toast.makeText(this, "SD-карта не доступна: " + Environment.getExternalStorageState(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, res.getString(R.string.sdCardnotAvailable) + Environment.getExternalStorageState(), Toast.LENGTH_LONG).show();
             return;
         }//if
         File sdPath = Environment.getExternalStorageDirectory();// получаем путь к SD
@@ -206,7 +209,7 @@ public class App2 extends AppCompatActivity {
             DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             downloadManager.enqueue(request);
         } catch (IllegalArgumentException e) {
-            Toast.makeText(this, "Can only download HTTP/HTTPS URIs", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, res.getString(R.string.onlyHTTP_HTTPS_URI), Toast.LENGTH_LONG).show();
             startMainApp();
         }//try-catch
     }//savePicture
@@ -229,10 +232,10 @@ public class App2 extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(App2.this, "Разрешения получены", Toast.LENGTH_LONG).show();
+                Toast.makeText(App2.this, res.getString(R.string.PermissionsGranted), Toast.LENGTH_LONG).show();
                 savePicture();
             } else {
-                Toast.makeText(App2.this, "Разрешения не получены", Toast.LENGTH_LONG).show();
+                Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
                 showPermissionDialog(App2.this);
             }
         } else {
@@ -249,15 +252,15 @@ public class App2 extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         String title = getResources().getString(R.string.app_name);
         builder.setTitle(title);
-        builder.setMessage(title + " требует разрешение для использования SD карты");
-        String positiveText = "Настройки";
+        builder.setMessage(title + res.getString(R.string.needPermissions));
+        String positiveText = res.getString(R.string.settings);
         builder.setPositiveButton(positiveText, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 openAppSettings();
             }
         });
-        String negativeText = "Выход";
+        String negativeText = res.getString(R.string.exit);
         builder.setNegativeButton(negativeText, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -286,10 +289,10 @@ public class App2 extends AppCompatActivity {
 
     private void requestApplicationConfig() {
         if (isPermissionGranted(WRITE_EXTERNAL_STORAGE_PERMISSION)) {
-            Toast.makeText(App2.this, "Теперь уже разрешения получены", Toast.LENGTH_LONG).show();
+            Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
             savePicture();
         } else {
-            Toast.makeText(App2.this, "Пользователь снова не дал нам разрешение", Toast.LENGTH_LONG).show();
+            Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
             requestPermission(WRITE_EXTERNAL_STORAGE_PERMISSION, REQUEST_WRITE_EXTERNAL_STORAGE);
         }//if
     }//requestApplicationConfig

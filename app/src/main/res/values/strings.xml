@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">BigDig2</string>
+    <string name="attention">Это приложение не является самостоятельным приложением и будет закрыто через</string>
+    <string name="seconds"> секунд</string>
+    <string name="addLink">Ссылка добавлена в базу данных</string>
+    <string name="errorOpenFile">Ошибка открытия файла!</string>
+    <string name="linkDeleted">Ссылка удалена, картинка загружена</string>
+    <string name="sdCardnotAvailable">SD-карта не доступна: </string>
+    <string name="onlyHTTP_HTTPS_URI">Можно загружать только HTTP / HTTPS URI</string>
+    <string name="PermissionsGranted">Разрешения получены</string>
+    <string name="PermissionsNotGranted">Разрешения не получены</string>
+    <string name="needPermissions"> требует разрешение для использования SD карты</string>
+    <string name="settings">Настройки</string>
+    <string name="exit">Выход</string>
 </resources>
