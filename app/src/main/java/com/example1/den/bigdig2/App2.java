@@ -17,7 +17,9 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Callback;
@@ -29,30 +31,48 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.OnNeverAskAgain;
+import permissions.dispatcher.OnPermissionDenied;
+import permissions.dispatcher.OnShowRationale;
+import permissions.dispatcher.PermissionRequest;
+import permissions.dispatcher.RuntimePermissions;
+
+@RuntimePermissions
 public class App2 extends AppCompatActivity {
 
     private ImageView imageView;
     private final static String DIR_SD = "BIGDIG/test/B/";
     private static final int REQUEST_WRITE_EXTERNAL_STORAGE = 10001;
     // объявляем разрешение, которое нам нужно получить
+    private static final String INTERNET_PERMISSION = Manifest.permission.INTERNET;
     private static final String WRITE_EXTERNAL_STORAGE_PERMISSION = Manifest.permission.WRITE_EXTERNAL_STORAGE;
     private String textLink;
     private String AUTHORITY;
     private String PATH;
     private String timeFormatted;
     private Resources res;
+    private static final int REQUEST_PERMITIONS = 1100;
+    private TextView textView2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_app2);
         res = getResources();//доступ к ресерсам
+        imageView = findViewById(R.id.imageView);
+        textView2 = findViewById(R.id.textView2);
+        textView2.setText(res.getString(R.string.needPermis));
+        App2PermissionsDispatcher.startWorkingWithPermissionCheck(this);
+//        startWorking();
+    }//onCreate
 
+    @NeedsPermission({Manifest.permission.INTERNET,  Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    public void startWorking(){
+        textView2.setText("");
         textLink = getIntent().getStringExtra("linkText");//получаем ссылку из EditText
         AUTHORITY = getIntent().getStringExtra("AUTHORITY");
         PATH = getIntent().getStringExtra("PATH");
-
-        imageView = findViewById(R.id.imageView);
         boolean processing = getIntent().getBooleanExtra("processing", false);
         //если нажали на ссылку в истории
         if (processing) {
@@ -61,7 +81,7 @@ public class App2 extends AppCompatActivity {
             //при нажатии на "ок"
             createLink();//сохраняем ссылку в базу приложения "А"
         }//if
-    }//onCreate
+    }
 
     //создаем данные по ссылке
     private void createLink() {
@@ -128,7 +148,8 @@ public class App2 extends AppCompatActivity {
                     @Override
                     public void run() {
                         getContentResolver().delete(CONTENT_URI, "_id=?", selectionArgs);//удаление из базы
-                        checkPermisAndSavePicture();//проверка прав и сохранение картинки
+                        savePicture();
+//                        checkPermisAndSavePicture();//проверка прав и сохранение картинки
                         Toast.makeText(getApplicationContext(), res.getString(R.string.linkDeleted), Toast.LENGTH_LONG).show();
                     }
                 }, 15000);
@@ -178,19 +199,6 @@ public class App2 extends AppCompatActivity {
         return values;
     }//createContentValues
 
-    private void checkPermisAndSavePicture() {
-        //сохраняем картинку
-        if (textLink != null && !textLink.equals("")) {
-            if (isPermissionGranted(WRITE_EXTERNAL_STORAGE_PERMISSION)) {
-//                Toast.makeText(this, "Разрешения есть, можно работать", Toast.LENGTH_SHORT).show();
-                savePicture();
-            } else {
-                // иначе запрашиваем разрешение у пользователя
-                requestPermission(WRITE_EXTERNAL_STORAGE_PERMISSION, REQUEST_WRITE_EXTERNAL_STORAGE);
-            }//if
-        }//if
-    }//checkPermisAndSavePicture
-
     private void savePicture() {
         Uri downloadUri = Uri.parse(textLink);
         // проверяем доступность SD
@@ -222,84 +230,51 @@ public class App2 extends AppCompatActivity {
     }//startMainApp
 
     //---------------------------------------------------------------------------------------------
-    private boolean isPermissionGranted(String permission) {
-        // проверяем разрешение - есть ли оно у нашего приложения
-        int permissionCheck = ActivityCompat.checkSelfPermission(this, permission);
-        return permissionCheck == PackageManager.PERMISSION_GRANTED;
-    }//isPermissionGranted
+    @OnPermissionDenied({Manifest.permission.INTERNET,  Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void permissionsDenied() {
+        Intent intent = new Intent();
+        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivityForResult(intent, REQUEST_PERMITIONS);
+    }//permissionsDenied
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(App2.this, res.getString(R.string.PermissionsGranted), Toast.LENGTH_LONG).show();
-                savePicture();
-            } else {
-                Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
-                showPermissionDialog(App2.this);
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }//if
-    }//onRequestPermissionsResult
+    @OnNeverAskAgain({Manifest.permission.INTERNET,  Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void onNeverAskAgain() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(res.getString(R.string.needPermission))
+                .setMessage( res.getString(R.string.PermissionsRationale))
+                .setPositiveButton( res.getString(R.string.ok), (dialog, which) -> {
+                    Intent intent = new Intent();
+                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
+                })
+                .setNegativeButton( res.getString(R.string.no), (dialog, which) -> dialog.dismiss()).create()
+                .show();
+    }
 
-    private void requestPermission(String permission, int requestCode) {
-        // запрашиваем разрешение
-        ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
-    }//requestPermission
-
-    private void showPermissionDialog(Context context) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        String title = getResources().getString(R.string.app_name);
-        builder.setTitle(title);
-        builder.setMessage(title + res.getString(R.string.needPermissions));
-        String positiveText = res.getString(R.string.settings);
-        builder.setPositiveButton(positiveText, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                openAppSettings();
-            }
-        });
-        String negativeText = res.getString(R.string.exit);
-        builder.setNegativeButton(negativeText, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                finish();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        // display dialog
-        dialog.show();
-    }//showPermissionDialog
-
-    private void openAppSettings() {
-        Intent intent1 = new Intent();
-        intent1.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent1.setData(Uri.parse("package:" + getPackageName()));
-        startActivityForResult(intent1, REQUEST_WRITE_EXTERNAL_STORAGE);
-    }//openAppSettings
+    @OnShowRationale({Manifest.permission.INTERNET,  Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void showRationale(final PermissionRequest request) {
+        new AlertDialog.Builder(this)
+                .setTitle(res.getString(R.string.needPermission))
+                .setMessage(res.getString(R.string.PermissionsRationale))
+                .setPositiveButton(res.getString(R.string.ok), (dialog, button) -> request.proceed())
+                .setNegativeButton(res.getString(R.string.no), (dialog, button) -> request.cancel())
+                .show();
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE) {
-            requestApplicationConfig();
+        if (requestCode == REQUEST_PERMITIONS) {
+            App2PermissionsDispatcher.startWorkingWithPermissionCheck(this);
         }
     }//onActivityResult
-
-    private void requestApplicationConfig() {
-        if (isPermissionGranted(WRITE_EXTERNAL_STORAGE_PERMISSION)) {
-            Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
-            savePicture();
-        } else {
-            Toast.makeText(App2.this, res.getString(R.string.PermissionsNotGranted), Toast.LENGTH_LONG).show();
-            requestPermission(WRITE_EXTERNAL_STORAGE_PERMISSION, REQUEST_WRITE_EXTERNAL_STORAGE);
-        }//if
-    }//requestApplicationConfig
 
     @Override
     public void onBackPressed() {
         startMainApp();
-        super.onBackPressed();
     }//onBackPressed
 }//class App2

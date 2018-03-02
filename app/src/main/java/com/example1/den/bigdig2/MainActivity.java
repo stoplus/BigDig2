@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer... values) {
             super.onProgressUpdate(values);
-            tvInfoTime.setText(values[0] + res.getString(R.string.seconds));
+            tvInfoTime.setText(values[0] + " " + res.getString(R.string.seconds));
         }//onProgressUpdate
 
         @Override
